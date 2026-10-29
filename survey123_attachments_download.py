@@ -2,6 +2,7 @@ import argparse
 import csv
 import os
 import re
+import sys
 
 from arcgis.gis import GIS
 from tqdm import tqdm
@@ -15,6 +16,7 @@ def survey_download(url, username, password, survey_item_id, save_path, keep_org
         gis = GIS(url, username, password)
     except Exception:
         print("Account authentication failed, please verify account details")
+        sys.exit(1)
     else:
         print("Done")
 
@@ -29,6 +31,7 @@ def survey_download(url, username, password, survey_item_id, save_path, keep_org
             item_excel.delete(force=True)
     except Exception:
         print("Failed to fetch survey, please verify survey ID")
+        sys.exit(1)
     else:
         print("Done")
 
@@ -72,22 +75,26 @@ def survey_download(url, username, password, survey_item_id, save_path, keep_org
             tqdm.write(f"Skipping {name} (no attachments)")
 
 
+def main():
+    ### Parse arguments
+    parser = argparse.ArgumentParser(
+        prog = "Survey123 Download",
+        description = "Downloads survey data and all associated attachments for a given survey ID"
+    )
 
-### Parse arguments
-parser = argparse.ArgumentParser(
-    prog = "Survey123 Download",
-    description = "Downloads survey data and all associated attachments for a given survey ID"
-)
+    parser.add_argument('url', help = "The URL for your ArcGIS organization (eg. https://wlugeography.maps.arcgis.com)")
+    parser.add_argument('username', help = "Username of associated ESRI online account, account must have access to the survey ID")
+    parser.add_argument('password', help = "Password of associated ESRI online account")
+    parser.add_argument('destination', help = "Destination directory for downloaded files and attachments")
+    parser.add_argument('surveyID', help = "Survey ID of survey to be downloaded")
+    parser.add_argument('-k', '--keep_org_item', action = 'store_true', help = "Set True if you want to keep the exported item in your organization content. Default False")
+    parser.add_argument('-s', '--store_csv_w_attachments', action = 'store_true', help = 'Choose if the .csv file that maps each attachment to its parent object ID is stored in the root download folder (false, default), or in each individual layer folder (true)')
 
-parser.add_argument('url', help = "The URL for your ArcGIS organization (eg. https://wlugeography.maps.arcgis.com")
-parser.add_argument('username', help = "Username of associated ESRI online account, account must have access to the survey ID")
-parser.add_argument('password', help = "Password of associated ESRI online account")
-parser.add_argument('destination', help = "Destination directory for downloaded files and attachments")
-parser.add_argument('surveyID', help = "Survey ID of survey to be downloaded")
-parser.add_argument('-k', '--keep_org_item', action = 'store_true', help = "Set True if you want to keep the exported item in your organization content. Default False")
-parser.add_argument('-s', '--store_csv_w_attachments', action = 'store_true', help = 'Choose if the .csv file that maps each attachment to its parent object ID is stored in the root download folder (false, default), or in each individual layer folder (true)')
+    args = parser.parse_args()
 
-args = parser.parse_args()
+    ### Execute downloader
+    survey_download(args.url, args.username, args.password, args.surveyID, args.destination, args.keep_org_item, args.store_csv_w_attachments)
 
-### Execute downloader
-survey_download(args.url, args.username, args.password, args.surveyID, args.destination, args.keep_org_item, args.store_csv_w_attachments)
+
+if __name__ == "__main__":
+    main()
